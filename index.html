@@ -1,21 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assignment 1</title>
+    <title>Assignment 1 - Interactive Data Visualization Using Weather Dataset</title>
     <link rel="stylesheet" href="css/styles.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
+
 <body>
 
     <div class="container"> <!-- Centers content and sets max width -->
-        <h1>Assignment 1</h1>
-        <div id="vis"></div> <!--  Will hold our visualization (SVG) -->
+        <h1> Weather Data Explorer </h1>
+
+        <div id="controls">
+            State or Territory: <select id="stateSelection" class="variable"></select>
+            Station: <select id="stationSelection" class="variable"></select>
+        </div>
+
+        <div id="dateSlider"></div>
+        <div id="tooltip" style="display:none"></div>
+        <div id="vis"></div>
     </div>
-    
+
     <!-- Load D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/d3-simple-slider"></script>
     <script src="js/script.js"></script>
 </body>
+
 </html>
+
+
+
+<!--
+Column	Description
+
+station:	Weather station name
+state:  	State or territory code
+latitude:	Latitude (degrees)
+longitude:	Longitude (degrees)
+elevation:	Elevation (meters)
+date:   	Date (YYYYMMDD)
+TMIN:   	Minimum temperature (Fahrenheit)
+TMAX:   	Maximum temperature (Fahrenheit)
+TAVG:   	Average temperature (Fahrenheit)
+AWND:   	Average wind speed (mph)
+WDF5:   	Direction of fastest 5-second wind (degrees)
+WSF5:   	Fastest 5-second wind speed (mph)
+SNOW:   	Snowfall (inches)
+SNWD:   	Snow depth (inches)
+PRCP:   	Precipitation (inches)
+
+
+
+Ways it can/will be used:
+
+
+
+
+
+
+
+
+
+
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/d3-simple-slider"></script>
+-->
