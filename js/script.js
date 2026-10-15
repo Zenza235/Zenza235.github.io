@@ -9,10 +9,65 @@ const path = './data/weather.csv'
 const COLS = ["station", "state", "latitude", "longitude", "elevation", "date",
   "TMIN", "TMAX", "TAVG", "AWND", "WDF5", "WSF5", "SNOW", "SNWD", "PRCP"]
 
+// US state abbrevs
+const states = {
+  AL: { name: "Alabama", id: "01" },
+  AK: { name: "Alaska", id: "02" },
+  AZ: { name: "Arizona", id: "04" },
+  AR: { name: "Arkansas", id: "05" },
+  CA: { name: "California", id: "06" },
+  CO: { name: "Colorado", id: "08" },
+  CT: { name: "Connecticut", id: "09" },
+  DE: { name: "Delaware", id: "10" },
+  DC: { name: "District of Columbia", id: "11" },
+  FL: { name: "Florida", id: "12" },
+  GA: { name: "Georgia", id: "13" },
+  HI: { name: "Hawaii", id: "15" },
+  ID: { name: "Idaho", id: "16" },
+  IL: { name: "Illinois", id: "17" },
+  IN: { name: "Indiana", id: "18" },
+  IA: { name: "Iowa", id: "19" },
+  KS: { name: "Kansas", id: "20" },
+  KY: { name: "Kentucky", id: "21" },
+  LA: { name: "Louisiana", id: "22" },
+  ME: { name: "Maine", id: "23" },
+  MD: { name: "Maryland", id: "24" },
+  MA: { name: "Massachusetts", id: "25" },
+  MI: { name: "Michigan", id: "26" },
+  MN: { name: "Minnesota", id: "27" },
+  MS: { name: "Mississippi", id: "28" },
+  MO: { name: "Missouri", id: "29" },
+  MT: { name: "Montana", id: "30" },
+  NE: { name: "Nebraska", id: "31" },
+  NV: { name: "Nevada", id: "32" },
+  NH: { name: "New Hampshire", id: "33" },
+  NJ: { name: "New Jersey", id: "34" },
+  NM: { name: "New Mexico", id: "35" },
+  NY: { name: "New York", id: "36" },
+  NC: { name: "North Carolina", id: "37" },
+  ND: { name: "North Dakota", id: "38" },
+  OH: { name: "Ohio", id: "39" },
+  OK: { name: "Oklahoma", id: "40" },
+  OR: { name: "Oregon", id: "41" },
+  PA: { name: "Pennsylvania", id: "42" },
+  RI: { name: "Rhode Island", id: "44" },
+  SC: { name: "South Carolina", id: "45" },
+  SD: { name: "South Dakota", id: "46" },
+  TN: { name: "Tennessee", id: "47" },
+  TX: { name: "Texas", id: "48" },
+  UT: { name: "Utah", id: "49" },
+  VT: { name: "Vermont", id: "50" },
+  VA: { name: "Virginia", id: "51" },
+  WA: { name: "Washington", id: "53" },
+  WV: { name: "West Virginia", id: "54" },
+  WI: { name: "Wisconsin", id: "55" },
+  WY: { name: "Wyoming", id: "56" }
+};
+
 // Dropdown variables
 let allData = []
-let byState = new Map();   // state -> [rows]
-let byStation = new Map(); // state -> Map(station -> [rows])
+// let byState = new Map();   // state -> [rows]
+// let byStation = new Map(); // state -> Map(station -> [rows])
 let defaultDay = 109
 
 // some values are empty and need to checked before conversion
@@ -85,37 +140,32 @@ function init() {
       SNWD: nothingOrNum(d.SNWD),
       PRCP: nothingOrNum(d.PRCP),
     }
-
     row.weatherType = weatherClassifier(row)
     return row
   })
   .then(data => {
-    console.log(data) // Check structure
+    // console.log(data) // Check structure
     //console.log("Total rows:", data.length)
     //console.log("First row:", data[0])
     //console.log("Columns:", data.columns)
-
     allData = data // Save processed data
+    console.log(allData)
 
-    buildGroupings() // group by state and stations
-    setupMap()
-    setupSelector()
-    updateVis()
-    // can change or remove
-    //updateAxes()
-    //addLegend()
+    // buildGroupings() // group by state and stations
 
+    setupMap();
+    updateVis();
+    setupSelector();
   })
   .catch(error => console.error('Error loading data:', error));
 }
 
 window.addEventListener('load', init);
 
-// Data Helpers
+/* Data Helpers */
 
 // make date readable, and get day within 365 days
 // example "20170312" -> { date: Date(2017, 2, 12), dayOfYear: 71 }
-// used for
 function parseDateGetDayOfYear(raw_date) {
   const s = String(raw_date)
   const parsed_date = new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8))
@@ -133,7 +183,6 @@ const formatDay = (day) => {
   return d3.timeFormat("%B %-d")(date) // turn into string
 }
 
-// get weather classification
 function weatherClassifier(d) {
   if ((d.SNOW != null && d.SNOW > 0) || (d.SNWD != null && d.SNWD > 0)) return 'snowy';
   if (d.PRCP != null && d.PRCP > 0 &&
@@ -153,31 +202,31 @@ function weatherIcon(weatherCase) {
   }
 }
 
-// Function(s) to group by state and by station
-function buildGroupings() {
-  byState.clear()
-  byStation.clear()
+// // Function(s) to group by state and by station
+// function buildGroupings() {
+//   byState.clear()
+//   byStation.clear()
 
-  // for each row, if there is no state label yet make it
-  // group each station under the state via mapping, also make label if doesn't exist yet
-  for (const ro of allData) {
-    if (!byState.has(ro.state)) byState.set(ro.state, []);
-    byState.get(ro.state).push(ro)
+//   // for each row, if there is no state label yet make it
+//   // group each station under the state via mapping, also make label if doesn't exist yet
+//   for (const ro of allData) {
+//     if (!byState.has(ro.state)) byState.set(ro.state, []);
+//     byState.get(ro.state).push(ro)
 
-    if (!byStation.has(ro.state)) byStation.set(ro.state, new Map());
-    const stationMap = byStation.get(ro.state);
-    if (!stationMap.has(ro.station)) stationMap.set(ro.station, []);
-    stationMap.get(ro.station).push(ro)
-  }
-}
+//     if (!byStation.has(ro.state)) byStation.set(ro.state, new Map());
+//     const stationMap = byStation.get(ro.state);
+//     if (!stationMap.has(ro.station)) stationMap.set(ro.station, []);
+//     stationMap.get(ro.station).push(ro)
+//   }
+// }
 
-// shows data that fits the dropdown filters (might change to a check box so multiple states could be seen?)
-function selectASection() {
-  const pool = filters.state === 'All' ? allData : (byState.get(filters.state) || []);
-  return pool.filter(d => (filters.station === 'All' || d.station === filters.station) &&
-    d.dayOfYear >= filters.days[0] && d.dayOfYear <= filters.days[1]
-  )
-}
+// // shows data that fits the dropdown filters (might change to a check box so multiple states could be seen?)
+// function selectASection() {
+//   const pool = filters.state === 'All' ? allData : (byState.get(filters.state) || []);
+//   return pool.filter(d => (filters.station === 'All' || d.station === filters.station) &&
+//     d.dayOfYear >= filters.days[0] && d.dayOfYear <= filters.days[1]
+//   )
+// }
 
 function setupSelector() {
   // Create date slider
@@ -186,18 +235,17 @@ function setupSelector() {
     .min(1)
     .max(365)
     .step(1)
-    .width(width - 100)
+    .width(width - 40)
     .displayValue(true)
     .tickValues([1, 60, 121, 182, 244, 305, 365])
     .tickFormat(formatDay)
     .default(defaultDay)
     .on('onchange', (val) => {
       defaultDay = +val;
-      console.log(
-        "Numerical day:", defaultDay,
-        "Calendar day:", formatDay(defaultDay)
-      );
-
+      // console.log(
+      //   "Numerical day:", defaultDay,
+      //   "Calendar day:", formatDay(defaultDay)
+      // );
       updateVis();
     });
 
@@ -209,7 +257,7 @@ function setupSelector() {
   // Display the slider
   d3.select('#dateSlider')
     .append('svg')
-    .attr('width', width - 40)
+    .attr('width', width + 20)
     .attr('height', 100)
     .append('g')
     .attr('transform', 'translate(30,30)')
@@ -219,15 +267,15 @@ function setupSelector() {
   d3.select('#variableSelection')
     .on('change', function () {
       filters.variable = this.value;
+      // update allData to contain just info about the variable
+      allData.filter(d => d[filters.variable] != null && Number.isFinite(d[filters.variable]));
       updateVis();
     });
 }
 
-
 function setupMap() {
   const map = mapSvg.select('.vis-country-map');
   const usTopologyUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-albers-10m.json";
-  const colorMap = d3.scaleQuantize([1, 10], d3.schemeBlues[9]); // temp colorMap
 
   d3.json(usTopologyUrl).then(us => {
     console.log(us)
@@ -277,8 +325,9 @@ function setupMap() {
       .attr("text-anchor", "middle")  
       .style("font-size", "16px")
       .attr("fill", "black")
-      .text(formatDay(defaultDay));
+      .text(`${formatDay(defaultDay)}, 2017`);
 
+    updateMapVis();
   }).catch(error => {
       console.error("Error loading the geographic data: ", error);
   });
@@ -298,82 +347,71 @@ function mapMouseLeave() {
     .style("opacity", .8)
 }
 
+// function refreshStationDropdown() {
+//   let stations
+//   if (filters.state === 'All') stations = Array.from(new Set(allData.map(d => d.station))).sort()
+//   else {
+//     // filter by stations in which are mapped to a state, empty if no mapping
+//     const stationMap = byStation.get(filters.state)
+//     stations = stationMap ? Array.from(stationMap.keys()).sort() : []
+//   }
+//   d3.selectAll('#stationSelection')
+//     .selectAll('option')
+//     .data(['All', ...stations])
+//     .join('option')
+//     .attr("value", d => d)
+//     .text(d => d === 'All' ? 'All Stations' : d) // Displayed text
 
-function refreshStationDropdown() {
-  let stations
-  if (filters.state === 'All') stations = Array.from(new Set(allData.map(d => d.station))).sort()
-  else {
-    // filter by stations in which are mapped to a state, empty if no mapping
-    const stationMap = byStation.get(filters.state)
-    stations = stationMap ? Array.from(stationMap.keys()).sort() : []
-  }
-  d3.selectAll('#stationSelection')
-    .selectAll('option')
-    .data(['All', ...stations])
-    .join('option')
-    .attr("value", d => d)
-    .text(d => d === 'All' ? 'All Stations' : d) // Displayed text
-
-  // reset if new state is chosen to 'all'
-  d3.select('#stationSelection').property('value', 'All')
-}
-
-
-function updateAxes(xScale, yScale) {
-  const plot = svg.select('.vis-line-plot');
-
-  // Create or update the x-axis
-  plot.selectAll('.x-axis')
-    .data([null])
-    .join('g')
-    .attr('class', 'x-axis')
-    .attr('transform', `translate(0,${height})`)
-    .call(
-      d3.axisBottom(xScale)
-        .ticks(d3.timeMonth.every(2))
-        .tickFormat(d3.timeFormat('%b'))
-    );
-
-  // Create or update the y-axis
-  plot.selectAll('.y-axis')
-    .data([null])
-    .join('g')
-    .attr('class', 'y-axis')
-    .call(d3.axisLeft(yScale));
-
-  // X-axis label
-  plot.selectAll('.x-label')
-    .data([null])
-    .join('text')
-    .attr('class', 'axis-label x-label')
-    .attr('x', width / 2)
-    .attr('y', height + 45)
-    .attr('text-anchor', 'middle')
-    .text('Date in 2017');
-
-  // Y-axis label
-  plot.selectAll('.y-label')
-    .data([null])
-    .join('text')
-    .attr('class', 'axis-label y-label')
-    .attr('transform', 'rotate(-90)')
-    .attr('x', -height / 2)
-    .attr('y', -65)
-    .attr('text-anchor', 'middle')
-    .text(variableLabels[filters.variable].label);
-}
+//   // reset if new state is chosen to 'all'
+//   d3.select('#stationSelection').property('value', 'All')
+// }
 
 function updateVis() {
-  // PLOT SETUP
+  updatePlotVis();
+  updateMapVis();
+}
+
+function updateMapVis() {
+  const map = mapSvg.select('.vis-country-map');
+
+  let mapData = d3.rollup(
+    allData.filter(d => states[d.state.toUpperCase()] != null && d.dayOfYear === defaultDay),
+    rows => d3.mean(rows, d => d[filters.variable]),
+    d => d.state
+  )
+
+  // console.log(mapData)
+
+  // create color scale (based on variable)
+  let minValue = Math.min(...mapData.values());
+  let maxValue = Math.max(...mapData.values());
+
+  const colorScale = d3.scaleSequential()
+    .domain([0, 100])
+    .interpolator(t => d3.interpolateRdYlBu(1-t));
+  
+  map.selectAll("path")
+    .transition()
+    .duration(120)
+    .attr('fill', d => {
+      let state = Object.keys(states).find(abbr => states[abbr].id === d.id);
+      // console.log(color)
+      return mapData.get(state) ? colorScale(mapData.get(state)) : "lightgray" ;
+    })
+
+  map.select(".map-title")
+    .text(variableLabels[filters.variable].label);
+
+  map.select(".map-subtitle")
+    .text(`${formatDay(defaultDay)}, 2017`);
+}
+
+function updatePlotVis() {
   const plot = svg.select('.vis-line-plot');
 
   // Group available measurements by day of the year
   const dailyData = d3.rollups(
-    allData.filter(d =>
-      d[filters.variable] != null &&
-      d.state == 'TX' && // where you can control filter for line graph data
-      Number.isFinite(d[filters.variable])
-    ),
+    allData.filter(d => d.state === 'TX' && Number.isFinite(d[filters.variable])),
     rows => ({
       date: rows[0].date,
       value: d3.mean(rows, d => d[filters.variable]) // takes average of each datapoint (avg across all states)
@@ -385,7 +423,10 @@ function updateVis() {
     date: result.date,
     value: result.value
   }))
+  .filter(d => Number.isFinite(d.value) && d.date instanceof Date && Number.isFinite(+d.date))
   .sort((a, b) => a.dayOfYear - b.dayOfYear);
+
+  // console.log(dailyData);
 
   // Stop if there is no data for the selected variable
   if (dailyData.length === 0) {
@@ -445,7 +486,6 @@ function updateVis() {
     .attr('stroke', '#2878b5')
     .attr('stroke-width', 2)
     .attr('d', line);
-
 
   // Find the data for the selected date
   const selectedPoint = dailyData.find(
@@ -526,16 +566,50 @@ function updateVis() {
         .style('stroke', 'none')
         .style('stroke-width', '0px');
     });
+}
 
-  // MAP SETUP
-  const map = mapSvg.select('.vis-country-map');
-  map.attr("fill", d => "steelblue")
+function updateAxes(xScale, yScale) {
+  const plot = svg.select('.vis-line-plot');
 
-  map.select(".map-title")
+  // Create or update the x-axis
+  plot.selectAll('.x-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'x-axis')
+    .attr('transform', `translate(0,${height})`)
+    .call(
+      d3.axisBottom(xScale)
+        .ticks(d3.timeMonth.every(2))
+        .tickFormat(d3.timeFormat('%b'))
+    );
+
+  // Create or update the y-axis
+  plot.selectAll('.y-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'y-axis')
+    .call(d3.axisLeft(yScale));
+
+  // X-axis label
+  plot.selectAll('.x-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label x-label')
+    .attr('x', width / 2)
+    .attr('y', height + 45)
+    .attr('text-anchor', 'middle')
+    .text('Date in 2017');
+
+  // Y-axis label
+  plot.selectAll('.y-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label y-label')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', -65)
+    .attr('text-anchor', 'middle')
     .text(variableLabels[filters.variable].label);
-
-  map.select(".map-subtitle")
-    .text(formatDay(defaultDay));
 }
 
 function showTooltip(event, html) {
