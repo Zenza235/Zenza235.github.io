@@ -38,6 +38,11 @@
     font-weight: bold;
 }
 
+.vis-country-map path {
+  fill: #fff;
+  stroke: #000;
+}
+
 button {
     padding: 8px 16px;
     margin-right: 10px;

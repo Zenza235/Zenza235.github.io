@@ -4,6 +4,7 @@ const width = 800 - margin.left - margin.right;
 const height = 600 - margin.top - margin.bottom;
 
 const path = './data/weather.csv'
+const mapPath = 'https://d3js.org/us-10m.v2.json';
 
 // dataset col names
 const COLS = ["station", "state", "latitude", "longitude", "elevation", "date",
@@ -25,7 +26,6 @@ const filters = { state: 'All', station: 'All', days: [1, 365] }
 const transitionTime = 1000; // 1000ms = 1 second
 let legendSize = 10  // Size of the legend squares
 
-
 // Create SVG
 const svg = d3.select('#vis')
   .append('svg')
@@ -40,14 +40,25 @@ const hoverLayer = svg.append('g').attr('class', 'hover-layer')
 // some visualizations already designated
 svg.append('g').attr('class', 'vis-line-plot')
 svg.append('g').attr('class', 'vis-pictogram')
-svg.append('g').attr('class', 'vis-country-map')
 
+// Create US map
+const us = d3.json(mapPath);
+const mapData = topojson.feature(us, us.objects.states).features;
+const pathGen = d3.geoPath();
+
+svg.append('g')
+  .attr('class', 'vis-country-map')
+  .selectAll('path')
+  .data(mapData)
+  .enter()
+  .append('path')
+  .attr('d', pathGen)
 
 // Initialization
 function init() {
-  d3.csv(path, d => {
-    //console.log("Raw CSV row:", d) // debugging
 
+  d3.csv(path, d => {
+    // console.log("Raw CSV row:", d) // debugging
     parsed_date = parseDateGetDayOfYear(d.date)
     const row = {
       station: d.station,
@@ -80,12 +91,11 @@ function init() {
 
       allData = data // Save processed data
 
-      buildGroupings() // group by statr and stations
+      buildGroupings() // group by state and stations
       setupSelector()
-
+      updateVis()
       // can change or remove
       //updateAxes()
-      //updateVis()
       //addLegend()
 
     })
@@ -184,7 +194,7 @@ function setupSelector() {
       filters.days = [defaultDay, defaultDay] /***/
 
       console.log("Numerical day:", defaultDay, "Calendar day:", formatDay(defaultDay))
-      //updateVis() // Refresh the chart 
+      updateVis() // Refresh the chart
     })
 
   d3.select('#dateSlider').selectAll('svg').remove()
@@ -244,14 +254,20 @@ function refreshStationDropdown() {
   d3.select('#stationSelection').property('value', 'All')
 }
 
+
+// Update map viz w/ data
+function updateVis() {
+  let currentData = allData.filter(d => d.dayOfYear === defaultDay)
+
+  // display a US map with each state display a color indicating one of the columns from the dataset
+  // the user can choose what data to display on the map
+  // TODO: render map 
+}
+
 // Potential Functions to use
 
 function updateAxes() {
   // Remove old axes/labels (ex of new values)
-}
-
-function updateVis() {
-  // Draws (or updates) the bubbles
 }
 
 function addLegend() {
