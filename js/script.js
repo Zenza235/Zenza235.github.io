@@ -20,7 +20,19 @@ let defaultDay = 109
 const nothingOrNum = val => (val == '' || val == null) ? null : +val
 
 //state and station dropdown filter
-const filters = { state: 'All', station: 'All', days: [1, 365] }
+const filters = { state: 'All', variable: 'TAVG', days: [1, 365] }
+
+
+const variableLabels = {
+  TAVG: { label: 'Average Temperature (°F)' },
+  TMIN: { label: 'Minimum Temperature (°F)' },
+  TMAX: { label: 'Maximum Temperature (°F)' },
+  PRCP: { label: 'Precipitation (inches)' },
+  SNOW: { label: 'Snowfall (inches)' },
+  AWND: { label: 'Average Wind Speed (mph)' }
+};
+
+
 
 // Transitions and legend variables
 const transitionTime = 1000; // 1000ms = 1 second
@@ -173,65 +185,110 @@ function selectASection() {
   )
 }
 
-// Makes sliders and dropdowns clickable
-function setupSelector() {
-  // Handles UI changes (sliders, dropdowns)
-  //console.log("Rows loaded:", allData.length)
-  //console.log("States found:", Array.from(byState.keys()))
+// // Makes sliders and dropdowns clickable
+// function setupSelector() {
+//   // Handles UI changes (sliders, dropdowns)
+//   //console.log("Rows loaded:", allData.length)
+//   //console.log("States found:", Array.from(byState.keys()))
 
+//   let slider = d3
+//     .sliderHorizontal()
+//     .min(1)
+//     .max(365)
+//     .step(1)
+//     .width((width - 100)) // helps center it
+//     .displayValue(true)
+//     .tickValues([1, 60, 121, 182, 244, 305, 365])
+//     .tickFormat(formatDay)
+//     .default(defaultDay)
+//     .on('onchange', (val) => {
+//       defaultDay = +val
+//       filters.days = [defaultDay, defaultDay] /***/
+
+//       console.log("Numerical day:", defaultDay, "Calendar day:", formatDay(defaultDay))
+//       //updateVis() // Refresh the chart 
+//     })
+
+//   d3.select('#dateSlider').selectAll('svg').remove()
+
+//   d3.select('#dateSlider')
+//     .append('svg')
+//     .attr('width', (width - 40)) // helps center it
+//     .attr('height', 100)
+//     .append('g')
+//     .attr('transform', 'translate(30,30)')
+//     .call(slider)
+
+//   // show states in dropdown (works now)
+//   const states = ['All', ...Array.from(byState.keys()).sort()]
+//   d3.selectAll('#stateSelection')
+//     .selectAll('option')
+//     .data(states)
+//     .join('option')
+//     .attr("value", d => d)
+//     .text(d => d === 'All' ? 'All States' : d) // Displayed text
+
+//   // when changing the states need to refresh the dropdown for stations
+//   refreshStationDropdown()
+
+
+//   // select all dropdown buttons
+//   d3.select('#stateSelection').on('change', function () {
+//     filters.state = this.value
+//     filters.station = 'All' // reset station when state changes
+//     refreshStationDropdown()
+//     //updateVis() // (empty, not used)
+//   })
+
+//   d3.select('#stationSelection').on('change', function () {
+//     filters.station = this.value
+//     //updateVis() //(not used)
+//   })
+// }
+
+
+function setupSelector() {
+  // Create date slider
   let slider = d3
     .sliderHorizontal()
     .min(1)
     .max(365)
     .step(1)
-    .width((width - 100)) // helps center it
+    .width(width - 100)
     .displayValue(true)
     .tickValues([1, 60, 121, 182, 244, 305, 365])
     .tickFormat(formatDay)
     .default(defaultDay)
     .on('onchange', (val) => {
-      defaultDay = +val
-      filters.days = [defaultDay, defaultDay] /***/
+      defaultDay = +val;
+      console.log(
+        "Numerical day:", defaultDay,
+        "Calendar day:", formatDay(defaultDay)
+      );
 
-      console.log("Numerical day:", defaultDay, "Calendar day:", formatDay(defaultDay))
-      updateVis() // Refresh the chart
-    })
+      updateVis();
+    });
 
-  d3.select('#dateSlider').selectAll('svg').remove()
+  // Remove any existing slider
+  d3.select('#dateSlider')
+    .selectAll('svg')
+    .remove();
 
+  // Display the slider
   d3.select('#dateSlider')
     .append('svg')
-    .attr('width', (width - 40)) // helps center it
+    .attr('width', width - 40)
     .attr('height', 100)
     .append('g')
     .attr('transform', 'translate(30,30)')
-    .call(slider)
+    .call(slider);
 
-  // show states in dropdown (works now)
-  const states = ['All', ...Array.from(byState.keys()).sort()]
-  d3.selectAll('#stateSelection')
-    .selectAll('option')
-    .data(states)
-    .join('option')
-    .attr("value", d => d)
-    .text(d => d === 'All' ? 'All States' : d) // Displayed text
-
-  // when changing the states need to refresh the dropdown for stations
-  refreshStationDropdown()
-
-
-  // select all dropdown buttons
-  d3.select('#stateSelection').on('change', function () {
-    filters.state = this.value
-    filters.station = 'All' // reset station when state changes
-    refreshStationDropdown()
-    //updateVis() // (empty, not used)
-  })
-
-  d3.select('#stationSelection').on('change', function () {
-    filters.station = this.value
-    //updateVis() //(not used)
-  })
+  // Variable dropdown
+  d3.select('#variableSelection')
+    .on('change', function () {
+      filters.variable = this.value;
+      updateVis();
+    });
 }
 
 
@@ -266,20 +323,235 @@ function updateVis() {
 
 // Potential Functions to use
 
-function updateAxes() {
-  // Remove old axes/labels (ex of new values)
+function updateAxes(xScale, yScale) {
+  const plot = svg.select('.vis-line-plot');
+
+  // Create or update the x-axis
+  plot.selectAll('.x-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'x-axis')
+    .attr('transform', `translate(0,${height})`)
+    .call(
+      d3.axisBottom(xScale)
+        .ticks(d3.timeMonth.every(2))
+        .tickFormat(d3.timeFormat('%b'))
+    );
+
+  // Create or update the y-axis
+  plot.selectAll('.y-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'y-axis')
+    .call(d3.axisLeft(yScale));
+
+  // X-axis label
+  plot.selectAll('.x-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label x-label')
+    .attr('x', width / 2)
+    .attr('y', height + 45)
+    .attr('text-anchor', 'middle')
+    .text('Date in 2017');
+
+  // Y-axis label
+  plot.selectAll('.y-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label y-label')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', -65)
+    .attr('text-anchor', 'middle')
+    .text(variableLabels[filters.variable].label);
 }
+
+function updateVis() {
+  const plot = svg.select('.vis-line-plot');
+
+  // Group available measurements by day of the year
+  const dailyData = d3.rollups(
+    allData.filter(d =>
+      d[filters.variable] != null &&
+      Number.isFinite(d[filters.variable])
+    ),
+    rows => ({
+      date: rows[0].date,
+      value: d3.mean(rows, d => d[filters.variable])
+    }),
+    d => d.dayOfYear
+  )
+    .map(([day, result]) => ({
+      dayOfYear: day,
+      date: result.date,
+      value: result.value
+    }))
+    .sort((a, b) => a.dayOfYear - b.dayOfYear);
+
+  // Stop if there is no data for the selected variable
+  if (dailyData.length === 0) {
+    plot.selectAll('.temperature-line').remove();
+    plot.selectAll('.no-data').remove();
+
+    plot.append('text')
+      .attr('class', 'no-data')
+      .attr('x', width / 2)
+      .attr('y', height / 2)
+      .attr('text-anchor', 'middle')
+      .text('No data available for this variable');
+
+    return;
+  }
+
+  plot.selectAll('.no-data').remove();
+
+  // X-axis: calendar dates
+  const xScale = d3.scaleTime()
+    .domain([new Date(2017, 0, 1), new Date(2017, 11, 31)])
+    .range([0, width]);
+
+  // Y-axis: selected weather measurement
+  let minValue = d3.min(dailyData, d => d.value);
+  let maxValue = d3.max(dailyData, d => d.value);
+
+  // Add space around the data, including when all values are equal
+  if (minValue === maxValue) {
+    minValue -= 1;
+    maxValue += 1;
+  } else {
+    const padding = (maxValue - minValue) * 0.05;
+    minValue -= padding;
+    maxValue += padding;
+  }
+
+  const yScale = d3.scaleLinear()
+    .domain([minValue, maxValue])
+    .nice()
+    .range([height, 0]);
+
+  // Draw or update the axes
+  updateAxes(xScale, yScale);
+
+  // Create the line generator
+  const line = d3.line()
+    .x(d => xScale(d.date))
+    .y(d => yScale(d.value));
+
+  // Draw or update the line
+  plot.selectAll('.temperature-line')
+    .data([dailyData])
+    .join('path')
+    .attr('class', 'temperature-line')
+    .attr('fill', 'none')
+    .attr('stroke', '#2878b5')
+    .attr('stroke-width', 2)
+    .attr('d', line);
+
+
+  // Find the data for the selected date
+  const selectedPoint = dailyData.find(
+    d => d.dayOfYear === defaultDay
+  );
+
+  // Draw a vertical line at the selected date
+  plot.selectAll('.selected-day-line')
+    .data(selectedPoint ? [selectedPoint] : [])
+    .join('line')
+    .attr('class', 'selected-day-line')
+    .attr('x1', d => xScale(d.date))
+    .attr('x2', d => xScale(d.date))
+    .attr('y1', 0)
+    .attr('y2', height)
+    .attr('stroke', '#e76f51')
+    .attr('stroke-width', 2)
+    .attr('stroke-dasharray', '5,5');
+
+  // Highlight the selected point on the graph
+  plot.selectAll('.selected-day-point')
+    .data(selectedPoint ? [selectedPoint] : [])
+    .join('circle')
+    .attr('class', 'selected-day-point')
+    .attr('cx', d => xScale(d.date))
+    .attr('cy', d => yScale(d.value))
+    .attr('r', 6)
+    .attr('fill', '#e76f51')
+    .attr('stroke', 'white')
+    .attr('stroke-width', 2);
+
+
+
+    
+  // Add hover points to the line graph
+  plot.selectAll('.hover-point')
+    .data(dailyData)
+    .join('circle')
+    .attr('class', 'hover-point')
+    .attr('cx', d => xScale(d.date))
+    .attr('cy', d => yScale(d.value))
+    .attr('r', 8)
+    .style('fill', 'transparent')
+    .on('mouseover', function(event, d) {
+      const dayRows = allData.filter(
+        row => row.dayOfYear === d.dayOfYear
+      );
+
+      const title = d3.timeFormat('%B %d, %Y')(d.date);
+
+      let html = hoverTemperature(dayRows, title);
+
+      html += `<br/>${variableLabels[filters.variable].label}: ${d.value.toFixed(2)}`;
+
+      const precipitation = d3.mean(
+        dayRows,
+        row => row.PRCP
+      );
+
+      html += `<br/>Precipitation: ${
+        precipitation == null
+          ? 'N/A'
+          : precipitation.toFixed(2) + ' inches'
+      }`;
+
+      showTooltip(event, html);
+
+      d3.select(this)
+        .style('stroke', 'black')
+        .style('stroke-width', '2px');
+    })
+    .on('mousemove', function(event) {
+      d3.select('#tooltip')
+        .style('left', (event.pageX + 20) + 'px')
+        .style('top', (event.pageY - 28) + 'px');
+    })
+    .on('mouseout', function() {
+      hideTooltip();
+
+      d3.select(this)
+        .style('stroke', 'none')
+        .style('stroke-width', '0px');
+    });
+
+}
+
+
+
 
 function addLegend() {
   // Adds a legend so users can decode colors
 }
 
 function showTooltip(event, html) {
-  // hovering over a datapoint should show information.
+  d3.select('#tooltip')
+    .style('display', 'block')
+    .html(html)
+    .style('left', (event.pageX + 20) + 'px')
+    .style('top', (event.pageY - 28) + 'px');
 }
 
 function hideTooltip() {
-  // once clicker leaves remove hover.
+  d3.select('#tooltip')
+    .style('display', 'none');
 }
 
 function hoverLocation(rows, title) {
@@ -287,5 +559,14 @@ function hoverLocation(rows, title) {
 }
 
 function hoverTemperature(rows, title) {
-  // shows: min / max / avg temp
+  const avgTemp = d3.mean(rows, d => d.TAVG);
+  const minTemp = d3.mean(rows, d => d.TMIN);
+  const maxTemp = d3.mean(rows, d => d.TMAX);
+
+  return `
+    <strong>${title}</strong><br/>
+    Average Temperature: ${avgTemp == null ? 'N/A' : avgTemp.toFixed(2) + ' °F'}<br/>
+    Minimum Temperature: ${minTemp == null ? 'N/A' : minTemp.toFixed(2) + ' °F'}<br/>
+    Maximum Temperature: ${maxTemp == null ? 'N/A' : maxTemp.toFixed(2) + ' °F'}
+  `;
 }
