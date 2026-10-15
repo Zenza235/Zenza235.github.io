@@ -286,22 +286,15 @@ function setupMap() {
 
 function mapMouseOver() {
   const states = d3.select(this.parentNode).selectAll(".state");
-  states.interrupt()
-    .transition()
-    .duration(150)
-    .style("opacity", .5)
+  states.interrupt().style("opacity", .5);
   d3.select(this)
     .interrupt()
-    .transition()
-    .duration(150)
-    .style("opacity", 1)
+    .style("opacity", 1);
 }
 
 function mapMouseLeave() {
   d3.select(this).selectAll(".state")
     .interrupt()
-    .transition()
-    .duration(150)
     .style("opacity", .8)
 }
 
