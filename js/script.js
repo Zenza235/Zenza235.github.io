@@ -76,6 +76,8 @@ const nothingOrNum = val => (val == '' || val == null) ? null : +val
 
 //state and station dropdown filter
 const filters = { state: null, variable: 'TAVG', day: 109 } // values are defaults
+let dateSlider;
+let dateSliderGroup;
 
 // transition time
 const t = 1000;
@@ -92,12 +94,12 @@ const variableLabels = {
 };
 
 const colorScales = {
-  TAVG: {domain: [0, 120], interpolator: t => d3.interpolateRdYlBu(1 - t)},
-  TMIN: {domain: [0, 120], interpolator: t => d3.interpolateRdYlBu(1 - t)},
-  TMAX: {domain: [0, 120], interpolator: t => d3.interpolateRdYlBu(1 - t)},
+  TAVG: {domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t)},
+  TMIN: {domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t)},
+  TMAX: {domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t)},
   PRCP: {domain: [0, 5], interpolator: d3.interpolateMagma},
   SNOW: {domain: [0, 5], interpolator: d3.interpolateMagma},
-  AWND: {domain: [0, 60], interpolator: d3.interpolateMagma},
+  AWND: {domain: [0, 50], interpolator: d3.interpolateMagma},
 }
 
 let legendSize = 10  // Size of the legend squares
@@ -244,7 +246,7 @@ function weatherIcon(weatherCase) {
 
 function setupSelector() {
   // Create date slider
-  let slider = d3
+  dateSlider = d3
     .sliderHorizontal()
     .min(1)
     .max(365)
@@ -272,13 +274,13 @@ function setupSelector() {
     .remove();
 
   // Display the slider
-  d3.select('#dateSlider')
+  dateSliderGroup = d3.select('#dateSlider')
     .append('svg')
     .attr('width', width + 20)
     .attr('height', 100)
     .append('g')
     .attr('transform', 'translate(30,30)')
-    .call(slider);
+    .call(dateSlider);
 
   // Variable dropdown
   d3.select('#variableSelection')
@@ -377,6 +379,93 @@ function updateMapVis() {
   const colorScale = d3.scaleSequential()
     .domain(colorScales[filters.variable].domain)
     .interpolator(colorScales[filters.variable].interpolator);
+
+  const legendWidth = 270;
+  const legend = d3.select('#mapLegend')
+    .selectAll('svg')
+    .data([null])
+    .join('svg')
+    .attr('viewBox', '0 0 400 76')
+    .attr('role', 'img')
+    .attr('aria-label', `${variableLabels[filters.variable].label} color scale`);
+  const gradient = legend.selectAll('defs')
+    .data([null])
+    .join('defs')
+    .selectAll('linearGradient')
+    .data([null])
+    .join('linearGradient')
+    .attr('id', 'map-color-scale-gradient')
+    .attr('x1', '0%')
+    .attr('x2', '100%')
+    .attr('y1', '0%')
+    .attr('y2', '0%');
+
+  gradient.selectAll('stop')
+    .data(d3.range(11))
+    .join('stop')
+    .attr('offset', d => `${d * 10}%`)
+    .attr('stop-color', d => colorScales[filters.variable].interpolator(d / 10));
+
+  legend.selectAll('.legend-title')
+    .data([variableLabels[filters.variable].label])
+    .join('text')
+    .attr('class', 'legend-title')
+    .attr('x', 20)
+    .attr('y', 16)
+    .attr('font-size', 12)
+    .attr('font-weight', '600')
+    .text(d => d);
+
+  legend.selectAll('.legend-bar')
+    .data([null])
+    .join('rect')
+    .attr('class', 'legend-bar')
+    .attr('x', 20)
+    .attr('y', 25)
+    .attr('width', legendWidth)
+    .attr('height', 14)
+    .attr('rx', 2)
+    .attr('fill', 'url(#map-color-scale-gradient)');
+
+  legend.selectAll('.legend-na-swatch')
+    .data([null])
+    .join('rect')
+    .attr('class', 'legend-na-swatch')
+    .attr('x', 306)
+    .attr('y', 25)
+    .attr('width', 16)
+    .attr('height', 14)
+    .attr('rx', 2)
+    .attr('fill', 'lightgray');
+
+  legend.selectAll('.legend-na-label')
+    .data(['N/A'])
+    .join('text')
+    .attr('class', 'legend-na-label')
+    .attr('x', 328)
+    .attr('y', 37)
+    .attr('font-size', 11)
+    .text(d => d);
+
+  const legendDomain = colorScales[filters.variable].domain;
+  legend.selectAll('.legend-min')
+    .data([legendDomain[0]])
+    .join('text')
+    .attr('class', 'legend-min')
+    .attr('x', 20)
+    .attr('y', 58)
+    .attr('font-size', 11)
+    .text(d3.format('~g'));
+
+  legend.selectAll('.legend-max')
+    .data([legendDomain[1]])
+    .join('text')
+    .attr('class', 'legend-max')
+    .attr('x', 20 + legendWidth)
+    .attr('y', 58)
+    .attr('text-anchor', 'end')
+    .attr('font-size', 11)
+    .text(d3.format('~g'));
 
   map.selectAll(".state")
     // placed below in the function.
@@ -591,6 +680,13 @@ function updatePlotVis() {
       d3.select(this)
         .style('stroke', 'none')
         .style('stroke-width', '0px');
+    })
+    .on('click', function (event, point) {
+      filters.day = point.dayOfYear;
+      dateSlider.value(filters.day);
+      dateSliderGroup.call(dateSlider);
+      updateMapVis();
+      updatePlotVis();
     });
 }
 

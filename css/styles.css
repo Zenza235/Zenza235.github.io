@@ -116,6 +116,19 @@ h1 {
     overflow: visible;
 }
 
+#mapLegend {
+    width: 100%;
+    margin: 0 20px;
+}
+
+#mapLegend svg {
+    display: block;
+    width: min(420px, 100%);
+    height: 76px;
+    margin: 0;
+    overflow: visible;
+}
+
 #controls select {
     min-width: 60px;
 }
