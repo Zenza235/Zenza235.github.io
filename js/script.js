@@ -428,10 +428,48 @@ function mapMouseOver() {
 }
 
 
-function mapMouseLeave() {
-  d3.select(this).selectAll(".state")
-    .interrupt()
-    .style("opacity", .8)
+function updateAxes(xScale, yScale) {
+  const plot = svg.select('.vis-line-plot');
+
+  // Create or update the x-axis
+  plot.selectAll('.x-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'x-axis')
+    .attr('transform', `translate(0,${height})`)
+    .call(
+      d3.axisBottom(xScale)
+        .ticks(d3.timeMonth.every(2))
+        .tickFormat(d3.timeFormat('%b'))
+    );
+
+  // Create or update the y-axis
+  plot.selectAll('.y-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'y-axis')
+    .call(d3.axisLeft(yScale));
+
+  // X-axis label
+  plot.selectAll('.x-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label x-label')
+    .attr('x', width / 2)
+    .attr('y', height + 45)
+    .attr('text-anchor', 'middle')
+    .text('Date in 2017');
+
+  // Y-axis label
+  plot.selectAll('.y-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label y-label')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', -65)
+    .attr('text-anchor', 'middle')
+    .text(variableLabels[filters.variable].label);
 }
 
 

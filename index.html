@@ -16,8 +16,15 @@
         <h1> Weather Data Explorer </h1>
 
         <div id="controls">
-            State or Territory: <select id="stateSelection" class="variable"></select>
-            Station: <select id="stationSelection" class="variable"></select>
+            <label for="variableSelection">Variable to Graph:</label>
+            <select id="variableSelection" class="variable">
+                <option value="TAVG">Average Temperature (°F)</option>
+                <option value="TMIN">Minimum Temperature (°F)</option>
+                <option value="TMAX">Maximum Temperature (°F)</option>
+                <option value="PRCP">Precipitation (inches)</option>
+                <option value="SNOW">Snowfall (inches)</option>
+                <option value="AWND">Average Wind Speed (mph)</option>
+            </select>
         </div>
 
         <div id="dateSlider"></div>
