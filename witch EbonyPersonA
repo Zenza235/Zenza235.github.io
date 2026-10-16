@@ -1,0 +1,20 @@
+*   [33m811f8f5[m[33m ([m[1;35mrefs/stash[m[33m)[m WIP on EbonyPersonA: 4340b19 Implemented hover location function. Added some lines to see tooltip on map and added to mouseover.
+[31m|[m[32m\[m  
+[31m|[m * [33m4e07163[m index on EbonyPersonA: 4340b19 Implemented hover location function. Added some lines to see tooltip on map and added to mouseover.
+[31m|[m[31m/[m  
+* [33m4340b19[m[33m ([m[1;32mEbonyPersonA[m[33m)[m Implemented hover location function. Added some lines to see tooltip on map and added to mouseover.
+[32m|[m * [33m7a8b848[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mPaoloPersonB[m[33m, [m[1;31morigin/PaoloPersonB[m[33m)[m add responsive map colors
+[32m|[m * [33mfac5832[m remove transition from state hover; now instant
+[32m|[m * [33m35efbb3[m add map chart w/ highlight hover
+[32m|[m *   [33m67ce340[m merge Jake changes from main into PersonB branch
+[32m|[m [34m|[m[35m\[m  
+[32m|[m [34m|[m * [33m4f609fb[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add interactive weather line graph and tooltips
+[32m|[m * [35m|[m [33m1dc288d[m TODO: map rendering
+[32m|[m [35m|[m[35m/[m  
+[32m|[m *   [33mb69c1a6[m Merge pull request #1 from Zenza235/EbonyPersonA
+[32m|[m [36m|[m[32m\[m  
+[32m|[m [36m|[m[32m/[m  
+[32m|[m[32m/[m[36m|[m   
+* [36m|[m [33me48819c[m[33m ([m[1;31morigin/EbonyPersonA[m[33m)[m  added slider feature and drop downs. Renamed parts and added connections in the html, added new variables and functions in the javascript and added to the css file.
+[36m|[m[36m/[m  
+* [33m1cdbecd[m[33m ([m[1;32mmain[m[33m)[m init commit
