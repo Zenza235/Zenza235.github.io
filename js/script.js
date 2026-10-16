@@ -91,13 +91,13 @@ const variableLabels = {
   AWND: { label: 'Average Wind Speed (mph)' }
 };
 
-const colorInterpolaters = {
-  TAVG: t => d3.interpolateRdYlBu(1 - t),
-  TMIN: t => d3.interpolateRdYlBu(1 - t),
-  TMAX: t => d3.interpolateRdYlBu(1 - t),
-  PRCP: d3.interpolateMagma,
-  SNOW: d3.interpolateMagma,
-  AWND: d3.interpolateMagma,
+const colorScales = {
+  TAVG: {domain: [0, 120], interpolator: t => d3.interpolateRdYlBu(1 - t)},
+  TMIN: {domain: [0, 120], interpolator: t => d3.interpolateRdYlBu(1 - t)},
+  TMAX: {domain: [0, 120], interpolator: t => d3.interpolateRdYlBu(1 - t)},
+  PRCP: {domain: [0, 5], interpolator: d3.interpolateMagma},
+  SNOW: {domain: [0, 5], interpolator: d3.interpolateMagma},
+  AWND: {domain: [0, 60], interpolator: d3.interpolateMagma},
 }
 
 let legendSize = 10  // Size of the legend squares
@@ -374,16 +374,9 @@ function updateMapVis() {
 
   // get all data 
   const currMapData = mapData.get(filters.day)?.get(filters.variable);
-
-  
-
-  const values = Array.from(currMapData?.values() ?? []).filter(Number.isFinite);
-  const [minValue, maxValue] = d3.extent(values);
-  const domain = minValue === maxValue ? [minValue - 1, maxValue + 1] : [minValue ?? 0, maxValue ?? 1];
-
   const colorScale = d3.scaleSequential()
-    .domain(domain)
-    .interpolator(colorInterpolaters[filters.variable]);
+    .domain(colorScales[filters.variable].domain)
+    .interpolator(colorScales[filters.variable].interpolator);
 
   map.selectAll(".state")
     // placed below in the function.
@@ -477,7 +470,7 @@ function updatePlotVis() {
     maxValue += padding;
   }
 
-  const yScale = d3.scaleLinear()
+  let yScale = d3.scaleLinear()
     .domain([minValue, maxValue])
     .nice()
     .range([height, 0]);
