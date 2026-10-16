@@ -91,6 +91,15 @@ const variableLabels = {
   AWND: { label: 'Average Wind Speed (mph)' }
 };
 
+const colorInterpolaters = {
+  TAVG: t => d3.interpolateRdYlBu(1 - t),
+  TMIN: t => d3.interpolateRdYlBu(1 - t),
+  TMAX: t => d3.interpolateRdYlBu(1 - t),
+  PRCP: d3.interpolateMagma,
+  SNOW: d3.interpolateMagma,
+  AWND: d3.interpolateMagma,
+}
+
 let legendSize = 10  // Size of the legend squares
 
 // Create the map SVG before the other visualizations so it appears above them.
@@ -366,10 +375,15 @@ function updateMapVis() {
   // get all data 
   const currMapData = mapData.get(filters.day)?.get(filters.variable);
 
-  // TODO: change colorScale based on variable
+  
+
+  const values = Array.from(currMapData?.values() ?? []).filter(Number.isFinite);
+  const [minValue, maxValue] = d3.extent(values);
+  const domain = minValue === maxValue ? [minValue - 1, maxValue + 1] : [minValue ?? 0, maxValue ?? 1];
+
   const colorScale = d3.scaleSequential()
-    .domain([0, 100])
-    .interpolator(t => d3.interpolateRdYlBu(1 - t));
+    .domain(domain)
+    .interpolator(colorInterpolaters[filters.variable]);
 
   map.selectAll(".state")
     // placed below in the function.
