@@ -449,23 +449,27 @@ function updateMapVis() {
 
   const legendDomain = colorScales[filters.variable].domain;
   legend.selectAll('.legend-min')
-    .data([legendDomain[0]])
-    .join('text')
-    .attr('class', 'legend-min')
-    .attr('x', 20)
-    .attr('y', 58)
-    .attr('font-size', 11)
-    .text(d3.format('~g'));
+  .data([legendDomain[0]])
+  .join('text')
+  .attr('class', 'legend-min')
+  .attr('x', 20)
+  .attr('y', 58)
+  .attr('font-size', 11)
+  .attr('text-anchor', 'start')
+  .text(d3.format('~g'));
 
-  legend.selectAll('.legend-max')
-    .data([legendDomain[1]])
-    .join('text')
-    .attr('class', 'legend-max')
-    .attr('x', 20 + legendWidth)
-    .attr('y', 58)
-    .attr('text-anchor', 'end')
-    .attr('font-size', 11)
-    .text(d3.format('~g'));
+legend.selectAll('.legend-max')
+  .data([legendDomain[1]])
+  .join('text')
+  .attr('class', 'legend-max')
+  .data([legendDomain[1]])
+  .join('text')
+  .attr('class', 'legend-max')
+  .attr('x', 290)
+  .attr('y', 58)
+  .attr('font-size', 11)
+  .attr('text-anchor', 'end')
+  .text(d => d3.format('~g')(d));
 
   map.selectAll(".state")
     // placed below in the function.
