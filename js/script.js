@@ -71,6 +71,7 @@ function init() {
     row.weatherType = weatherClassifier(row)
     return row
   })
+<<<<<<< Updated upstream
 
     .then(data => {
       //console.log(data) // Check structure
@@ -88,6 +89,21 @@ function init() {
       //updateVis()
       //addLegend()
 
+=======
+    .then(data => {
+      // console.log(data) // Check structure
+      //console.log("Total rows:", data.length)
+      //console.log("First row:", data[0])
+      //console.log("Columns:", data.columns)
+      allData = data // Save processed data
+      console.log(allData)
+
+      // buildGroupings() // group by state and stations
+
+      setupMap();
+      updateVis();
+      setupSelector();
+>>>>>>> Stashed changes
     })
     .catch(error => console.error('Error loading data:', error));
 }
@@ -129,14 +145,15 @@ function weatherClassifier(d) {
 function weatherIcon(weatherCase) {
   // icons later, colors for now
   switch (weatherCase) {
-    case 'snowy': return '#4fc3f7';
+    case 'snowy': return '#e8f8ff';
     case 'rainy': return '#1565c0';
-    case 'windy': return '#90a4ae';
-    case 'clear': return '#e5ff00';
-    default: return '#e5ff00';
+    case 'windy': return '#cc74ff';
+    case 'clear': return '#f0f6b9';
+    default: return '#30312d';
   }
 }
 
+<<<<<<< Updated upstream
 // Function(s) to group by state and by station
 function buildGroupings() {
   byState.clear()
@@ -162,6 +179,8 @@ function selectASection() {
     d.dayOfYear >= filters.days[0] && d.dayOfYear <= filters.days[1]
   )
 }
+=======
+>>>>>>> Stashed changes
 
 // Makes sliders and dropdowns clickable
 function setupSelector() {
@@ -225,6 +244,7 @@ function setupSelector() {
 }
 
 
+<<<<<<< Updated upstream
 function refreshStationDropdown() {
   let stations
   if (filters.state === 'All') stations = Array.from(new Set(allData.map(d => d.station))).sort()
@@ -250,12 +270,421 @@ function updateAxes() {
   // Remove old axes/labels (ex of new values)
 }
 
+=======
+  d3.json(usTopologyUrl).then(us => {
+    console.log(us)
+    // Draw States
+    const stateFeatures = topojson.feature(us, us.objects.states).features;
+    const projection = d3.geoIdentity()
+      .fitSize([width, height], { type: 'FeatureCollection', features: stateFeatures });
+
+    const zoom = 1.15;
+    const [translateX, translateY] = projection.translate();
+
+    projection
+      .scale(projection.scale() * zoom)
+      .translate([
+        width / 2 - zoom * (width / 2 - translateX) - 30,
+        height / 2 - zoom * (height / 2 - translateY)
+      ]);
+    // .translate([width/2, height/2])
+    const path = d3.geoPath(projection);
+
+    map.selectAll("path")
+      .data(stateFeatures)
+      .join("path")
+      .attr("d", path)
+      .style("stroke", "white")
+      .attr("class", "state")
+      .style("opacity", .8)
+      .on("mouseenter", mapMouseOver)
+      // map tooltip ******************************
+      .on("mousemove", function (event) {
+        d3.select('#tooltip')
+          .style('left', (event.pageX + 20) + 'px')
+          .style('top', (event.pageY - 28) + 'px');
+      })
+      .on("mouseout", function () {
+        hideTooltip();
+        d3.select(this)
+          .style('stroke', 'white')
+          .style('stroke-width', '1px');
+      });// ******************************************
+    map.on("mouseleave", mapMouseLeave);
+
+    // Map title & subtitle
+    const title_y = - margin.top / 2 + 10
+
+    map.append("text")
+      .attr("class", "map-title")
+      .attr("x", (width / 2))
+      .attr("y", title_y)
+      .attr("text-anchor", "middle")
+      .style("font-size", "20px")
+      .attr("fill", "black")
+      .text(variableLabels[filters.variable].label);
+
+    map.append("text")
+      .attr("class", "map-subtitle")
+      .attr("x", (width / 2))
+      .attr("y", title_y + 30)
+      .attr("text-anchor", "middle")
+      .style("font-size", "16px")
+      .attr("fill", "black")
+      .text(`${formatDay(defaultDay)}, 2017`);
+
+    updateMapVis();
+  }).catch(error => {
+    console.error("Error loading the geographic data: ", error);
+  });
+}
+
+
+function mapMouseOver(event, d) {
+  // Highlight the hovered state
+  const state = d3.select(this.parentNode).selectAll(".state");
+  state.interrupt().style("opacity", .5);
+  d3.select(this)
+    .interrupt()
+    .style("opacity", 1);
+
+
+  // Added second tooltip *********
+
+  // Find the state abbreviation
+  const stateAbbr = Object.keys(states).find(
+    abbr => states[abbr].id === String(d.id).padStart(2, "0")
+  );
+
+  if (!stateAbbr) {
+    console.error("State not found for map feature:", d.id);
+    return;
+  }
+
+  // All records for this state: coordinates and elevations
+  const stateRows = allData.filter(
+    row => row.state === stateAbbr
+  );
+
+  // Records for this state on the selected day
+  const dayRows = stateRows.filter(
+    row => row.dayOfYear === defaultDay
+  );
+
+  const title =
+    `${states[stateAbbr].name} — ${formatDay(defaultDay)}`;
+
+  // Latitude, longitude, minimum elevation, maximum elevation
+  let html = hoverLocation(stateRows, title);
+
+  // Count weather patterns on the selected day
+  const weatherCounts = d3.rollup(
+    dayRows,
+    rows => rows.length,
+    row => weatherClassifier(row)
+  );
+
+  // Rank patterns by frequency and keep the top three
+  const topWeather = Array.from(
+    weatherCounts,
+    ([type, count]) => ({ type, count })
+  )
+    .sort((a, b) =>
+      b.count - a.count || a.type.localeCompare(b.type)
+    )
+    .slice(0, 3);
+
+  html += `<br/><strong>Top 3 Weather Patterns:</strong><br/>`;
+
+  if (topWeather.length === 0) {
+    html += `<em>No data for this day</em>`;
+  } else {
+    for (const [index, weather] of topWeather.entries()) {
+      const icon = weatherIcon(weather.type);
+
+      html += `
+        <div>
+          <span style="
+            display:inline-block;
+            width:12px;
+            height:12px;
+            border-radius:50%;
+            background:${icon};
+            border:1px solid #333;
+            flex:0 0 auto;
+          "></span>
+          <span>
+            ${index + 1}. ${weather.type} — ${weather.count}
+            ${weather.count === 1 ? "record" : "records"}
+          </span>
+        </div>`;
+    }
+  }
+
+  showTooltip(event, html);
+}
+
+
+
+
+function mapMouseLeave() {
+  d3.select(this).selectAll(".state")
+    .interrupt()
+    .style("opacity", .8)
+}
+
+
+
+>>>>>>> Stashed changes
 function updateVis() {
   // Draws (or updates) the bubbles
 }
 
+<<<<<<< Updated upstream
 function addLegend() {
   // Adds a legend so users can decode colors
+=======
+function updateMapVis() {
+  const map = mapSvg.select('.vis-country-map');
+
+  let mapData = d3.rollup(
+    allData.filter(d => states[d.state.toUpperCase()] != null && d.dayOfYear === defaultDay),
+    rows => d3.mean(rows, d => d[filters.variable]),
+    d => d.state
+  )
+
+  // console.log(mapData)
+
+  // create color scale (based on variable)
+  let minValue = Math.min(...mapData.values());
+  let maxValue = Math.max(...mapData.values());
+
+  const colorScale = d3.scaleSequential()
+    .domain([0, 100])
+    .interpolator(t => d3.interpolateRdYlBu(1 - t));
+
+  map.selectAll("path")
+    .transition()
+    .duration(120)
+    .attr('fill', d => {
+      let state = Object.keys(states).find(abbr => states[abbr].id === d.id);
+      // console.log(color)
+      return mapData.get(state) ? colorScale(mapData.get(state)) : "lightgray";
+    })
+
+  map.select(".map-title")
+    .text(variableLabels[filters.variable].label);
+
+  map.select(".map-subtitle")
+    .text(`${formatDay(defaultDay)}, 2017`);
+
+
+}
+
+function updatePlotVis() {
+  const plot = svg.select('.vis-line-plot');
+
+  // Group available measurements by day of the year
+  const dailyData = d3.rollups(
+    allData.filter(d => d.state === 'TX' && Number.isFinite(d[filters.variable])),
+    rows => ({
+      date: rows[0].date,
+      value: d3.mean(rows, d => d[filters.variable]) // takes average of each datapoint (avg across all states)
+    }),
+    d => d.dayOfYear
+  )
+    .map(([day, result]) => ({
+      dayOfYear: day,
+      date: result.date,
+      value: result.value
+    }))
+    .filter(d => Number.isFinite(d.value) && d.date instanceof Date && Number.isFinite(+d.date))
+    .sort((a, b) => a.dayOfYear - b.dayOfYear);
+
+  // console.log(dailyData);
+
+  // Stop if there is no data for the selected variable
+  if (dailyData.length === 0) {
+    plot.selectAll('.temperature-line').remove();
+    plot.selectAll('.no-data').remove();
+
+    plot.append('text')
+      .attr('class', 'no-data')
+      .attr('x', width / 2)
+      .attr('y', height / 2)
+      .attr('text-anchor', 'middle')
+      .text('No data available for this variable');
+
+    return;
+  }
+
+  plot.selectAll('.no-data').remove();
+
+  // X-axis: calendar dates
+  const xScale = d3.scaleTime()
+    .domain([new Date(2017, 0, 1), new Date(2017, 11, 31)])
+    .range([0, width]);
+
+  // Y-axis: selected weather measurement
+  let minValue = d3.min(dailyData, d => d.value);
+  let maxValue = d3.max(dailyData, d => d.value);
+
+  // Add space around the data, including when all values are equal
+  if (minValue === maxValue) {
+    minValue -= 1;
+    maxValue += 1;
+  } else {
+    const padding = (maxValue - minValue) * 0.05;
+    minValue -= padding;
+    maxValue += padding;
+  }
+
+  const yScale = d3.scaleLinear()
+    .domain([minValue, maxValue])
+    .nice()
+    .range([height, 0]);
+
+  // Draw or update the axes
+  updateAxes(xScale, yScale);
+
+  // Create the line generator
+  const line = d3.line()
+    .x(d => xScale(d.date))
+    .y(d => yScale(d.value));
+
+  // Draw or update the line
+  plot.selectAll('.temperature-line')
+    .data([dailyData])
+    .join('path')
+    .attr('class', 'temperature-line')
+    .attr('fill', 'none')
+    .attr('stroke', '#2878b5')
+    .attr('stroke-width', 2)
+    .attr('d', line);
+
+  // Find the data for the selected date
+  const selectedPoint = dailyData.find(
+    d => d.dayOfYear === defaultDay
+  );
+
+  // Draw a vertical line at the selected date
+  plot.selectAll('.selected-day-line')
+    .data(selectedPoint ? [selectedPoint] : [])
+    .join('line')
+    .attr('class', 'selected-day-line')
+    .attr('x1', d => xScale(d.date))
+    .attr('x2', d => xScale(d.date))
+    .attr('y1', 0)
+    .attr('y2', height)
+    .attr('stroke', '#e76f51')
+    .attr('stroke-width', 2)
+    .attr('stroke-dasharray', '5,5');
+
+  // Highlight the selected point on the graph
+  plot.selectAll('.selected-day-point')
+    .data(selectedPoint ? [selectedPoint] : [])
+    .join('circle')
+    .attr('class', 'selected-day-point')
+    .attr('cx', d => xScale(d.date))
+    .attr('cy', d => yScale(d.value))
+    .attr('r', 6)
+    .attr('fill', '#e76f51')
+    .attr('stroke', 'white')
+    .attr('stroke-width', 2);
+
+  // Add hover points to the line graph
+  plot.selectAll('.hover-point')
+    .data(dailyData)
+    .join('circle')
+    .attr('class', 'hover-point')
+    .attr('cx', d => xScale(d.date))
+    .attr('cy', d => yScale(d.value))
+    .attr('r', 8)
+    .style('fill', 'transparent')
+    .on('mouseover', function (event, d) {
+      const dayRows = allData.filter(
+        row => row.dayOfYear === d.dayOfYear
+      );
+
+      const title = d3.timeFormat('%B %d, %Y')(d.date);
+
+      let html = hoverTemperature(dayRows, title);
+
+      html += `<br/>${variableLabels[filters.variable].label}: ${d.value.toFixed(2)}`;
+
+      const precipitation = d3.mean(
+        dayRows,
+        row => row.PRCP
+      );
+
+      html += `<br/>Precipitation: ${precipitation == null
+        ? 'N/A'
+        : precipitation.toFixed(2) + ' inches'
+        }`;
+
+      showTooltip(event, html);
+
+      d3.select(this)
+        .style('stroke', 'black')
+        .style('stroke-width', '2px');
+    })
+    .on('mousemove', function (event) {
+      d3.select('#tooltip')
+        .style('left', (event.pageX + 20) + 'px')
+        .style('top', (event.pageY - 28) + 'px');
+    })
+    .on('mouseout', function () {
+      hideTooltip();
+
+      d3.select(this)
+        .style('stroke', 'none')
+        .style('stroke-width', '0px');
+    });
+}
+
+function updateAxes(xScale, yScale) {
+  const plot = svg.select('.vis-line-plot');
+
+  // Create or update the x-axis
+  plot.selectAll('.x-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'x-axis')
+    .attr('transform', `translate(0,${height})`)
+    .call(
+      d3.axisBottom(xScale)
+        .ticks(d3.timeMonth.every(2))
+        .tickFormat(d3.timeFormat('%b'))
+    );
+
+  // Create or update the y-axis
+  plot.selectAll('.y-axis')
+    .data([null])
+    .join('g')
+    .attr('class', 'y-axis')
+    .call(d3.axisLeft(yScale));
+
+  // X-axis label
+  plot.selectAll('.x-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label x-label')
+    .attr('x', width / 2)
+    .attr('y', height + 45)
+    .attr('text-anchor', 'middle')
+    .text('Date in 2017');
+
+  // Y-axis label
+  plot.selectAll('.y-label')
+    .data([null])
+    .join('text')
+    .attr('class', 'axis-label y-label')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', -65)
+    .attr('text-anchor', 'middle')
+    .text(variableLabels[filters.variable].label);
+>>>>>>> Stashed changes
 }
 
 function showTooltip(event, html) {
@@ -266,10 +695,30 @@ function hideTooltip() {
   // once clicker leaves remove hover.
 }
 
+// map
 function hoverLocation(rows, title) {
-  // shows: lat / long / elev
+  // shows: general lat and long and highest and lowest elevation. shows three most common weather types.
+  const lat = d3.mean(rows, d => d.latitude);
+  const long = d3.mean(rows, d => d.longitude);
+  //const elev = d3.mean(rows, d => d.elevation);
+
+  const minElev = d3.min(rows, d => d.elevation);
+  const maxElev = d3.max(rows, d => d.elevation);
+
+  const lat_dir = lat == null ? 'N/A' : (lat >= 0 ? 'N' : 'S')
+  const long_dir = long == null ? 'N/A' : (long >= 0 ? 'E' : 'W')
+
+  return `
+    <strong>${title}</strong><br/>
+    Latitude: ${lat == null ? 'N/A' : Math.abs(lat).toFixed(2) + ' °' + lat_dir}<br/>
+    Longitude: ${long == null ? 'N/A' : Math.abs(long).toFixed(2) + ' °' + long_dir}<br/>
+    Max Elevation: ${maxElev == null ? 'N/A' : maxElev.toFixed(2) + ' m'}<br/>
+    Min Elevation: ${minElev == null ? 'N/A' : minElev.toFixed(2) + ' m'}<br/>
+  `;
 }
 
+// graph
 function hoverTemperature(rows, title) {
   // shows: min / max / avg temp
 }
+
