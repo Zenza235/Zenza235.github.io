@@ -11,73 +11,95 @@ const COLS = ["station", "state", "latitude", "longitude", "elevation", "date",
 
 // US state abbrevs
 const states = {
-  AL: { name: "Alabama", id: "01" },
-  AK: { name: "Alaska", id: "02" },
-  AZ: { name: "Arizona", id: "04" },
-  AR: { name: "Arkansas", id: "05" },
-  CA: { name: "California", id: "06" },
-  CO: { name: "Colorado", id: "08" },
-  CT: { name: "Connecticut", id: "09" },
-  DE: { name: "Delaware", id: "10" },
-  DC: { name: "District of Columbia", id: "11" },
-  FL: { name: "Florida", id: "12" },
-  GA: { name: "Georgia", id: "13" },
-  HI: { name: "Hawaii", id: "15" },
-  ID: { name: "Idaho", id: "16" },
-  IL: { name: "Illinois", id: "17" },
-  IN: { name: "Indiana", id: "18" },
-  IA: { name: "Iowa", id: "19" },
-  KS: { name: "Kansas", id: "20" },
-  KY: { name: "Kentucky", id: "21" },
-  LA: { name: "Louisiana", id: "22" },
-  ME: { name: "Maine", id: "23" },
-  MD: { name: "Maryland", id: "24" },
-  MA: { name: "Massachusetts", id: "25" },
-  MI: { name: "Michigan", id: "26" },
-  MN: { name: "Minnesota", id: "27" },
-  MS: { name: "Mississippi", id: "28" },
-  MO: { name: "Missouri", id: "29" },
-  MT: { name: "Montana", id: "30" },
-  NE: { name: "Nebraska", id: "31" },
-  NV: { name: "Nevada", id: "32" },
-  NH: { name: "New Hampshire", id: "33" },
-  NJ: { name: "New Jersey", id: "34" },
-  NM: { name: "New Mexico", id: "35" },
-  NY: { name: "New York", id: "36" },
-  NC: { name: "North Carolina", id: "37" },
-  ND: { name: "North Dakota", id: "38" },
-  OH: { name: "Ohio", id: "39" },
-  OK: { name: "Oklahoma", id: "40" },
-  OR: { name: "Oregon", id: "41" },
-  PA: { name: "Pennsylvania", id: "42" },
-  RI: { name: "Rhode Island", id: "44" },
-  SC: { name: "South Carolina", id: "45" },
-  SD: { name: "South Dakota", id: "46" },
-  TN: { name: "Tennessee", id: "47" },
-  TX: { name: "Texas", id: "48" },
-  UT: { name: "Utah", id: "49" },
-  VT: { name: "Vermont", id: "50" },
-  VA: { name: "Virginia", id: "51" },
-  WA: { name: "Washington", id: "53" },
-  WV: { name: "West Virginia", id: "54" },
-  WI: { name: "Wisconsin", id: "55" },
-  WY: { name: "Wyoming", id: "56" }
+  AL: { name: "Alabama" },
+  AK: { name: "Alaska" },
+  AZ: { name: "Arizona" },
+  AR: { name: "Arkansas" },
+  CA: { name: "California" },
+  CO: { name: "Colorado" },
+  CT: { name: "Connecticut" },
+  DE: { name: "Delaware" },
+  FL: { name: "Florida" },
+  GA: { name: "Georgia" },
+  HI: { name: "Hawaii" },
+  ID: { name: "Idaho" },
+  IL: { name: "Illinois" },
+  IN: { name: "Indiana" },
+  IA: { name: "Iowa" },
+  KS: { name: "Kansas" },
+  KY: { name: "Kentucky" },
+  LA: { name: "Louisiana" },
+  ME: { name: "Maine" },
+  MD: { name: "Maryland" },
+  MA: { name: "Massachusetts" },
+  MI: { name: "Michigan" },
+  MN: { name: "Minnesota" },
+  MS: { name: "Mississippi" },
+  MO: { name: "Missouri" },
+  MT: { name: "Montana" },
+  NE: { name: "Nebraska" },
+  NV: { name: "Nevada" },
+  NH: { name: "New Hampshire" },
+  NJ: { name: "New Jersey" },
+  NM: { name: "New Mexico" },
+  NY: { name: "New York" },
+  NC: { name: "North Carolina" },
+  ND: { name: "North Dakota" },
+  OH: { name: "Ohio" },
+  OK: { name: "Oklahoma" },
+  OR: { name: "Oregon" },
+  PA: { name: "Pennsylvania" },
+  RI: { name: "Rhode Island" },
+  SC: { name: "South Carolina" },
+  SD: { name: "South Dakota" },
+  TN: { name: "Tennessee" },
+  TX: { name: "Texas" },
+  UT: { name: "Utah" },
+  VT: { name: "Vermont" },
+  VA: { name: "Virginia" },
+  WA: { name: "Washington" },
+  WV: { name: "West Virginia" },
+  WI: { name: "Wisconsin" },
+  WY: { name: "Wyoming" }
 };
 
-// Dropdown variables
-let allData = []
+/**
+ * (for writeup stuff)
+ * encountered issue where the website would start to lag as the slide was
+ * repeatedly moved. this was because allData was being filtered everytime
+ * the visualizations were updated (i.e. updatePlotVis / updateMapVis were
+ * called). 
+ * 
+ * solved it by first flattening down the data into the following:
+ * { state, dayOfYear, var, value } (each var had its own row)
+ * ex: { MD, 1, TAVG, 80 } -> MD @ 1/1/17 had avg. temp of 80 F
+ * 
+ * then d3.rollup grouped the data by the following:
+ * map  : day -> variable -> state
+ * chart: state -> variable -> day
+ * 
+ * that way to access the TAVG for all states on 1/5/17, for example
+ * updateMapVis would just need to access mapData w/
+ * mapData.get(1/5/17).get(TAVG) which is O(1); much faster than
+ * constantly filtering everytime you wanted a new query
+ * 
+ */
+let mapData = []
+let chartData = []
+
 // let byState = new Map();   // state -> [rows]
 // let byStation = new Map(); // state -> Map(station -> [rows])
-let defaultDay = 109
 
 // some values are empty and need to checked before conversion
 const nothingOrNum = val => (val == '' || val == null) ? null : +val
 
 //state and station dropdown filter
-const filters = { state: 'ALL', variable: 'TAVG', days: [1, 365] }
+const filters = { state: null, variable: 'TAVG', day: 109 } // values are defaults
 
 // transition time
 const t = 1000;
+
+const title_y = - margin.top / 2 + 10
 
 const variableLabels = {
   TAVG: { label: 'Average Temperature (°F)' },
@@ -124,10 +146,10 @@ function init() {
     parsed_date = parseDateGetDayOfYear(d.date)
     const row = {
       station: d.station,
-      state: d.state,
-      latitude: nothingOrNum(d.latitude),
-      longitude: nothingOrNum(d.longitude),
-      elevation: nothingOrNum(d.elevation),
+      state: d.state, // state abbr (e.g. MD, TX, etc.)
+      // latitude: nothingOrNum(d.latitude),
+      // longitude: nothingOrNum(d.longitude),
+      // elevation: nothingOrNum(d.elevation),
       date: parsed_date.date,
       dayOfYear: parsed_date.dayOfYear,
       TMIN: nothingOrNum(d.TMIN),
@@ -144,18 +166,42 @@ function init() {
     return row
   })
   .then(data => {
-    // console.log(data) // Check structure
-    //console.log("Total rows:", data.length)
-    //console.log("First row:", data[0])
-    //console.log("Columns:", data.columns)
-    allData = data // Save processed data
-    console.log(allData)
+    console.log(data) // Check structure
+    const variableNames = COLS.slice(6);
+    const flatData = data.flatMap(row =>
+      states[row.state] == null
+        ? []
+        : variableNames
+          .filter(variable => Number.isFinite(row[variable]))
+          .map(variable => ({
+            dayOfYear: row.dayOfYear,
+            variable,
+            state: row.state,
+            value: row[variable]
+          }))
+    );
+    mapData = d3.rollup(
+      flatData,
+      rows => d3.mean(rows, d => d.value),
+      d => d.dayOfYear,
+      d => d.variable,
+      d => d.state
+    );
+    chartData = d3.rollup(
+      flatData,
+      rows => d3.mean(rows, d => d.value),
+      d => d.state,
+      d => d.variable,
+      d => d.dayOfYear
+    );
+    // console.log(flatData);
+    // console.log(mapData);
+    // console.log(chartData);
 
     // buildGroupings() // group by state and stations
-
     setupMap();
-    updateVis();
     setupSelector();
+    updatePlotVis();
   })
   .catch(error => console.error('Error loading data:', error));
 }
@@ -191,16 +237,20 @@ function weatherClassifier(d) {
   return 'clear'
 }
 
-function weatherIcon(weatherCase) {
-  // icons later, colors for now
-  switch (weatherCase) {
-    case 'snowy': return '#4fc3f7';
-    case 'rainy': return '#1565c0';
-    case 'windy': return '#90a4ae';
-    case 'clear': return '#e5ff00';
-    default: return '#e5ff00';
-  }
+function nameToAbbr(stateName) {
+  return Object.keys(states).find(abbr => states[abbr].name === stateName);
 }
+
+// function weatherIcon(weatherCase) {
+//   // icons later, colors for now
+//   switch (weatherCase) {
+//     case 'snowy': return '#4fc3f7';
+//     case 'rainy': return '#1565c0';
+//     case 'windy': return '#90a4ae';
+//     case 'clear': return '#e5ff00';
+//     default: return '#e5ff00';
+//   }
+// }
 
 // // Function(s) to group by state and by station
 // function buildGroupings() {
@@ -236,17 +286,20 @@ function setupSelector() {
     .max(365)
     .step(1)
     .width(width - 40)
-    .displayValue(true)
+    .displayValue(false)
     .tickValues([1, 60, 121, 182, 244, 305, 365])
     .tickFormat(formatDay)
-    .default(defaultDay)
+    .default(filters.day)
     .on('onchange', (val) => {
-      defaultDay = +val;
+      filters.day = +val;
       // console.log(
       //   "Numerical day:", defaultDay,
       //   "Calendar day:", formatDay(defaultDay)
       // );
-      updateVis();
+
+      // SHOULD UPDATE MAP COLORS & CHART'S ORANGE LINE; ideally nothing else
+      updateMapVis();
+      updatePlotVis();
     });
 
   // Remove any existing slider
@@ -267,9 +320,9 @@ function setupSelector() {
   d3.select('#variableSelection')
     .on('change', function () {
       filters.variable = this.value;
-      // update allData to contain just info about the variable
-      allData.filter(d => d[filters.variable] != null && Number.isFinite(d[filters.variable]));
-      updateVis();
+      // UPDATES MAP & CHART
+      updateMapVis();
+      updatePlotVis();
     });
 }
 
@@ -281,21 +334,21 @@ function setupMap() {
     console.log(us)
     // Draw States
     const stateFeatures = topojson.feature(us, us.objects.states).features;
+    console.log(stateFeatures);
     const projection = d3.geoIdentity()
       .fitSize([width, height], { type: 'FeatureCollection', features: stateFeatures });
     
     const zoom = 1.15;
     const [translateX, translateY] = projection.translate();
-
-    projection
-      .scale(projection.scale() * zoom)
+    projection.scale(projection.scale() * zoom)
       .translate([
         width / 2 - zoom * (width / 2 - translateX) - 30,
         height / 2 - zoom * (height / 2 - translateY)
       ]);
-      // .translate([width/2, height/2])
-    const path = d3.geoPath(projection);
 
+    const path = d3.geoPath(projection);
+    
+    // Drawing that US and its states
     map.selectAll("path")
       .data(stateFeatures)
       .join("path")
@@ -303,12 +356,28 @@ function setupMap() {
       .style("stroke", "white")
       .attr("class", "state")
       .style("opacity", .8)
-      .on("mouseenter", mapMouseOver);
-    map.on("mouseleave", mapMouseLeave);
-    
-    // Map title & subtitle
-    const title_y = - margin.top / 2 + 10
+      .style("cursor", "pointer")
+      .on("click", function(event, feature) {
+        map.selectAll(".state")
+          .style("stroke", "white")
+          .style("stroke-width", null);
+        map.selectAll(".selected-state-outline")
+          .data([feature])
+          .join("path")
+          .attr("class", "selected-state-outline")
+          .attr("d", path)
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", 2)
+          .attr("pointer-events", "none")
+          .raise();
+        
+        filters.state = nameToAbbr(feature.properties.name);
+        console.log(`new state of interest = ${filters.state}`);
+        updatePlotVis();
+      });
 
+    // Map title & subtitle
     map.append("text")
       .attr("class", "map-title")
       .attr("x", (width / 2))             
@@ -325,26 +394,12 @@ function setupMap() {
       .attr("text-anchor", "middle")  
       .style("font-size", "16px")
       .attr("fill", "black")
-      .text(`${formatDay(defaultDay)}, 2017`);
+      .text(`${formatDay(filters.day)}, 2017`); // all data is from 2017
 
     updateMapVis();
   }).catch(error => {
       console.error("Error loading the geographic data: ", error);
   });
-}
-
-function mapMouseOver() {
-  const states = d3.select(this.parentNode).selectAll(".state");
-  states.interrupt().style("opacity", .5);
-  d3.select(this)
-    .interrupt()
-    .style("opacity", 1);
-}
-
-function mapMouseLeave() {
-  d3.select(this).selectAll(".state")
-    .interrupt()
-    .style("opacity", .8)
 }
 
 // function refreshStationDropdown() {
@@ -366,70 +421,81 @@ function mapMouseLeave() {
 //   d3.select('#stationSelection').property('value', 'All')
 // }
 
-function updateVis() {
-  updatePlotVis();
-  updateMapVis();
-}
+/**
+ * TODO *
+ * (pt. 1: map stuff)
+ * - add legend for map viz
+ * - add unique colors / scaling for each variable (for map viz)
+ * - add tool tips to display data when hovering over states
+ * 
+ * (pt. 4: layout)
+ * - viz's need to be side by side (increase width to 1440px)
+ *    - 1440px for full page
+ *    - 1140px for container holding both svg's
+ * - reorganize
+ * 
+ * - video demo
+ * - 
+ */
 
 function updateMapVis() {
   const map = mapSvg.select('.vis-country-map');
 
-  let mapData = d3.rollup(
-    allData.filter(d => states[d.state.toUpperCase()] != null && d.dayOfYear === defaultDay),
-    rows => d3.mean(rows, d => d[filters.variable]),
-    d => d.state
-  )
+  // get all data 
+  const currMapData = mapData.get(filters.day)?.get(filters.variable);
 
-  // console.log(mapData)
-
-  // create color scale (based on variable)
-  let minValue = Math.min(...mapData.values());
-  let maxValue = Math.max(...mapData.values());
-
+  // TODO: change colorScale based on variable
   const colorScale = d3.scaleSequential()
     .domain([0, 100])
     .interpolator(t => d3.interpolateRdYlBu(1-t));
   
-  map.selectAll("path")
+  map.selectAll(".state")
+    .on("mouseenter", function(event, d) {
+      const states = d3.select(this.parentNode).selectAll(".state");
+      states.interrupt().style("opacity", .5);
+
+      d3.select(this)
+        .interrupt()
+        .style("opacity", 1);
+
+      // TODO: display tool tip
+      
+    })
     .transition()
     .duration(120)
     .attr('fill', d => {
-      let state = Object.keys(states).find(abbr => states[abbr].id === d.id);
-      // console.log(color)
-      return mapData.get(state) ? colorScale(mapData.get(state)) : "lightgray" ;
-    })
+      const state = nameToAbbr(d.properties.name);
+      const value = currMapData?.get(state);
+      return Number.isFinite(value) ? colorScale(value) : "lightgray";
+    });
+  map.on("mouseleave", function(event, d) {
+    d3.select(this).selectAll(".state")
+    .interrupt()
+    .style("opacity", .8);
+  });
 
   map.select(".map-title")
     .text(variableLabels[filters.variable].label);
 
   map.select(".map-subtitle")
-    .text(`${formatDay(defaultDay)}, 2017`);
+    .text(`${formatDay(filters.day)}, 2017`);
 }
 
 function updatePlotVis() {
   const plot = svg.select('.vis-line-plot');
 
-  // Group available measurements by day of the year
-  const dailyData = d3.rollups(
-    allData.filter(d => d.state === 'TX' && Number.isFinite(d[filters.variable])),
-    rows => ({
-      date: rows[0].date,
-      value: d3.mean(rows, d => d[filters.variable]) // takes average of each datapoint (avg across all states)
-    }),
-    d => d.dayOfYear
-  )
-  .map(([day, result]) => ({
-    dayOfYear: day,
-    date: result.date,
-    value: result.value
+  const currChartData = Array.from(
+    chartData.get(filters.state)?.get(filters.variable) ?? [], 
+    ([dayOfYear, value]) => ({
+    dayOfYear,
+    date: new Date(2017, 0, dayOfYear - 1),
+    value
   }))
-  .filter(d => Number.isFinite(d.value) && d.date instanceof Date && Number.isFinite(+d.date))
+  .filter(d => Number.isFinite(d.value))
   .sort((a, b) => a.dayOfYear - b.dayOfYear);
 
-  // console.log(dailyData);
-
   // Stop if there is no data for the selected variable
-  if (dailyData.length === 0) {
+  if (currChartData.length === 0) {
     plot.selectAll('.temperature-line').remove();
     plot.selectAll('.no-data').remove();
 
@@ -438,7 +504,7 @@ function updatePlotVis() {
       .attr('x', width / 2)
       .attr('y', height / 2)
       .attr('text-anchor', 'middle')
-      .text('No data available for this variable');
+      .text('Select a state to view its data.');
 
     return;
   }
@@ -451,8 +517,8 @@ function updatePlotVis() {
     .range([0, width]);
 
   // Y-axis: selected weather measurement
-  let minValue = d3.min(dailyData, d => d.value);
-  let maxValue = d3.max(dailyData, d => d.value);
+  let minValue = d3.min(currChartData, d => d.value);
+  let maxValue = d3.max(currChartData, d => d.value);
 
   // Add space around the data, including when all values are equal
   if (minValue === maxValue) {
@@ -472,6 +538,27 @@ function updatePlotVis() {
   // Draw or update the axes
   updateAxes(xScale, yScale);
 
+  plot.select('.plot-title').remove();
+  plot.select('.plot-subtitle').remove();
+
+  plot.append("text")
+    .attr("class", "plot-title")
+    .attr("x", (width / 2))             
+    .attr("y", title_y)
+    .attr("text-anchor", "middle")  
+    .style("font-size", "20px") 
+    .attr("fill", "black")
+    .text(`${variableLabels[filters.variable].label} in 2017`);
+
+  plot.append("text")
+    .attr("class", "plot-subtitle")
+    .attr("x", (width / 2))   
+    .attr("y", title_y + 30)
+    .attr("text-anchor", "middle")  
+    .style("font-size", "16px")
+    .attr("fill", "black")
+    .text(states[filters.state].name); // all data is from 2017
+
   // Create the line generator
   const line = d3.line()
     .x(d => xScale(d.date))
@@ -479,7 +566,7 @@ function updatePlotVis() {
 
   // Draw or update the line
   plot.selectAll('.temperature-line')
-    .data([dailyData])
+    .data([currChartData])
     .join('path')
     .attr('class', 'temperature-line')
     .attr('fill', 'none')
@@ -488,9 +575,7 @@ function updatePlotVis() {
     .attr('d', line);
 
   // Find the data for the selected date
-  const selectedPoint = dailyData.find(
-    d => d.dayOfYear === defaultDay
-  );
+  const selectedPoint = currChartData.find(d => d.dayOfYear === filters.day);
 
   // Draw a vertical line at the selected date
   plot.selectAll('.selected-day-line')
@@ -519,18 +604,20 @@ function updatePlotVis() {
     
   // Add hover points to the line graph
   plot.selectAll('.hover-point')
-    .data(dailyData)
+    .data(currChartData)
     .join('circle')
     .attr('class', 'hover-point')
     .attr('cx', d => xScale(d.date))
     .attr('cy', d => yScale(d.value))
-    .attr('r', 8)
-    .style('fill', 'transparent')
+    .attr('r', 3)
+    .style('fill', 'steelblue')
     .on('mouseover', function(event, d) {
-      const dayRows = allData.filter(
-        row => row.dayOfYear === d.dayOfYear
-      );
-
+      const dayRows = [Object.fromEntries(
+        Array.from(chartData.get(filters.state) ?? [], ([variable, valuesByDay]) => [
+          variable,
+          valuesByDay.get(d.dayOfYear)
+        ])
+      )];
       const title = d3.timeFormat('%B %d, %Y')(d.date);
 
       let html = hoverTemperature(dayRows, title);
