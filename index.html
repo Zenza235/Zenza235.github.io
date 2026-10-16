@@ -30,6 +30,96 @@
         <div id="mapLegend" aria-label="Map color scale legend"></div>
         <div id="tooltip" style="display:none"></div>
         <div id="vis"></div>
+        <h2> WriteUp </h2>
+        <h3> Introduction </h3>
+        <p>
+
+            Our team used the weather dataset to visualize the temperature and weather information of each US state. We
+            have two visualizations, one is a map of the United States where each state is color coded based on the
+            combination of a dropdown menu of the data type and a slider showing the day of the year. When hovering over
+            a state, a tooltip will show the latitude and longitude and the maximum and minimum elevations within the
+            state. As well as the most common reported weather patterns for the day. Additionally, this visualization is
+            clickable. When clicked on the second visualization, a line chart will automatically graph the data types
+            specified by the drop down highlighting the day specified by the date slider. This visualization also has a
+            tooltip showcasing all the values within the dropdown menu for easy reference.
+        </p>
+
+        <h3> Rationale </h3>
+        <p>
+
+            In both visualizations the rows or the items were modeled around the states and the channels were the other
+            column values indicated above. Our team tried to answer the majority of the questions a viewer might ask
+            when viewing the dataset. In tandem, we tried to correlate these channels together to let the viewer make
+            connections and conclusions to the data. Our two visualizations relate close to each other while keeping
+            just enough variance to be equally valuable.
+
+            First we grouped similar channels together. Locational data such as latitude and longitude were grouped onto
+            the map of the US as it more readily perceived on a more physical mapping than a numerical representation.
+            On the same map and same tooltip, the most common reported weather patterns were indicated by state and by
+            day. This data had the ability to correlate well with the dropdown menus color scale used for temperature
+            and precipitation.
+
+            The temperature and precipitation data which are mapped onto line graphs the same dropdown can isolate,
+            showing the map and a line graph side by side for comparison.
+
+            This setup can answer many direct questions and correlational questions. While still having enough isolated
+            variables to not clutter the visualizations and confuse the viewer.
+        </p>
+
+        <h3> Overview of Development </h3>
+        <p>
+
+            We split the tasks into three parts, one per student. We split by the two visualizations and one for dataset
+            setup. Setup included making the visualizations initialized, initializing the slider and dropdowns and
+            linking the html, css, csv and js files together. The visualizations included being implemented and
+            connected together with the setup and with each other. Later in the implementation, when criteria arose
+            those available would switch roles if needed.
+
+
+            Roughly implementation took a week long. It took around a few hours to a maximum of two or three days for
+            each part/section. Debugging the drop down menus and aligning the sliders was one of the more time consuming
+            tasks. Since lap 4-5 overlaps with this assignment, implementing the lab and making the setup relate close
+            to the lab fixed many of the issues with the sliders or drop down menu not working or the svg not showing.
+            We also encountered an issue where the website would lag from the sliders or the dropdown menu would
+            populate slowly. It led to dropdowns being altered from showing certain channels, like the states or
+            stations. The slider would lag because allData was filtering on every update. (i.e when calling
+            updatePlotVis and updateMapVis). This problem was solved by flattening the data first into individual rows
+            then using d3.rollup. Solved it by first flattening down the data into the following: { state, dayOfYear,
+            var, value } (each var had its own row)
+            ex: { MD, 1, TAVG, 80 } -> MD at 1/1/17 had avg. temp of 80 F. Then d3.rollup grouped the data by the
+            following:
+            map : day -> variable -> state
+            chart: state -> variable -> day
+
+            That way, to access the TAVG for all states on 1/5/17, for example, updateMapVis would just need to access
+            mapData with mapData.get(1/5/17).get(TAVG) which is O(1); much faster than constantly filtering every time
+            you wanted a new query.
+        </p>
+
+        <h3> References </h3>
+        <p>
+
+            Some functions used google search to find reference to aid in implementation. The functions that included
+            this search were the day formatting helper functions, and hoverLocation. D3.rollup and D3.timeFormat were
+            also looked up using the documentation, (https://devdocs.io/d3/). For the formatting of the date to days of
+            the year and into ‘month, day’ strings, use of W3 schools JS date methods,
+            (https://www.w3schools.com/Jsref/jsref_obj_date.asp). Were used. The date was hard to parse at first, the
+            day of the year was much larger than expected. New Date() starts from Jan 1 1970, so the current year of the
+            dataset, 2017 needed to be subtracted away to start from 2017 and get an accurate value to be used in the
+            slider.
+
+            In addition to the weather dataset, the US map was built off reference from:
+            https://cdn.jsdelivr.net/npm/us-atlas@3/counties-albers-10m.json.
+        </p>
+
+        <p>
+            AI Usage
+            Google searches were used during the development process meaning we interacted with and used answers
+            generated from Google Gemini. Github Copilot was also used during development, assisting mostly with UI
+            formatting (e.g. rendering the map visualization at a nice size for the user, adjusting the
+            width/height/placement of UI elements).
+
+        </p>
     </div>
 
     <!-- Load D3.js -->
