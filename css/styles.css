@@ -8,15 +8,43 @@
 
 /* Container styling for layout */
 .container {
+    width: 100%;
     max-width: 800px;
     margin: 2rem auto;
     font-family: Arial, sans-serif;
 }
 
+#vis {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 800px;
+    max-width: none;
+}
+
 #vis svg {
+    display: block;
+    flex: none;
+    box-sizing: border-box;
+    width: 800px;
     margin: 2rem 0;
     border: 1px solid #ccc;
     /*otherwise you can't see this part*/
+}
+
+@media (max-width: 1023px) {
+    #vis {
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 540px) {
+    #vis svg {
+        width: 100%;
+        height: auto;
+    }
 }
 
 .x-axis path,
@@ -37,6 +65,8 @@
     font-size: 12px;
     font-weight: bold;
 }
+
+
 
 button {
     padding: 8px 16px;
