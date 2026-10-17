@@ -94,12 +94,12 @@ const variableLabels = {
 };
 
 const colorScales = {
-  TAVG: {domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t)},
-  TMIN: {domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t)},
-  TMAX: {domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t)},
-  PRCP: {domain: [0, 5], interpolator: d3.interpolateMagma},
-  SNOW: {domain: [0, 5], interpolator: d3.interpolateMagma},
-  AWND: {domain: [0, 50], interpolator: d3.interpolateMagma},
+  TAVG: { domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t) },
+  TMIN: { domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t) },
+  TMAX: { domain: [0, 110], interpolator: t => d3.interpolateRdYlBu(1 - t) },
+  PRCP: { domain: [0, 5], interpolator: d3.interpolateMagma },
+  SNOW: { domain: [0, 5], interpolator: d3.interpolateMagma },
+  AWND: { domain: [0, 50], interpolator: d3.interpolateMagma },
 }
 
 let legendSize = 10  // Size of the legend squares
@@ -449,27 +449,27 @@ function updateMapVis() {
 
   const legendDomain = colorScales[filters.variable].domain;
   legend.selectAll('.legend-min')
-  .data([legendDomain[0]])
-  .join('text')
-  .attr('class', 'legend-min')
-  .attr('x', 20)
-  .attr('y', 58)
-  .attr('font-size', 11)
-  .attr('text-anchor', 'start')
-  .text(d3.format('~g'));
+    .data([legendDomain[0]])
+    .join('text')
+    .attr('class', 'legend-min')
+    .attr('x', 20)
+    .attr('y', 58)
+    .attr('font-size', 11)
+    .attr('text-anchor', 'start')
+    .text(d3.format('~g'));
 
-legend.selectAll('.legend-max')
-  .data([legendDomain[1]])
-  .join('text')
-  .attr('class', 'legend-max')
-  .data([legendDomain[1]])
-  .join('text')
-  .attr('class', 'legend-max')
-  .attr('x', 290)
-  .attr('y', 58)
-  .attr('font-size', 11)
-  .attr('text-anchor', 'end')
-  .text(d => d3.format('~g')(d));
+  legend.selectAll('.legend-max')
+    .data([legendDomain[1]])
+    .join('text')
+    .attr('class', 'legend-max')
+    .data([legendDomain[1]])
+    .join('text')
+    .attr('class', 'legend-max')
+    .attr('x', 290)
+    .attr('y', 58)
+    .attr('font-size', 11)
+    .attr('text-anchor', 'end')
+    .text(d => d3.format('~g')(d));
 
   map.selectAll(".state")
     // placed below in the function.
@@ -826,19 +826,6 @@ function hoverTemperature(rows, title) {
   `;
 }
 
-
-function showTooltip(event, html) {
-  d3.select('#tooltip')
-    .style('display', 'block')
-    .html(html)
-    .style('left', (event.pageX + 20) + 'px')
-    .style('top', (event.pageY - 28) + 'px');
-}
-
-function hideTooltip() {
-  d3.select('#tooltip')
-    .style('display', 'none');
-}
 
 
 function mapMouseOver(event, d) {
